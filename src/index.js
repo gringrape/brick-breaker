@@ -1,48 +1,46 @@
-class MethodChain {
-  constructor(obj) {
-    if (!(this instanceof MethodChain)) {
-      return new MethodChain(...obj);
-    }
+import MethodChain from './MethodChain';
 
-    this.obj = obj;
-
-    // eslint-disable-next-line no-restricted-syntax
-    for (const method in obj) {
-      if (typeof obj[method] === 'function') {
-        this[method] = (...args) => {
-          this.obj[method](...args);
-          return this;
-        };
-      }
-    }
-  }
-
-  set(prop, val) {
-    this.obj[prop] = val;
-    return this;
-  }
-}
+import {
+  move,
+  hitHorizontal,
+  hitVertical,
+} from './moves';
 
 const canvas = document.getElementById('canvas');
 const context = new MethodChain(canvas.getContext('2d'));
 
+const BALL_RADIUS = 20;
+
 function drawBall(x, y) {
   context
     .beginPath()
-    .arc(x, y, 20, 0, Math.PI * 2, false)
+    .arc(x, y, BALL_RADIUS, 0, Math.PI * 2, false)
     .set('fillStyle', 'green')
     .fill()
     .closePath();
 }
 
-const state = {
+let state = {
   x: 240,
   y: 160,
+  velocity: {
+    dx: 2, dy: 2,
+  },
 };
 
 function moveBall() {
-  state.x += 1;
-  state.y += 1;
+  const { x, y, velocity } = state;
+  const { dx, dy } = velocity;
+
+  state = move(state);
+
+  if (x + dx + BALL_RADIUS > canvas.width || x + dx - BALL_RADIUS < 0) {
+    state = hitVertical(state);
+  }
+
+  if (y + dy + BALL_RADIUS > canvas.height || y + dy - BALL_RADIUS < 0) {
+    state = hitHorizontal(state);
+  }
 }
 
 function draw() {
@@ -50,8 +48,8 @@ function draw() {
 
   const { x, y } = state;
 
-  drawBall(x, y);
   moveBall();
+  drawBall(x, y);
 }
 
-setInterval(draw, 10);
+setInterval(draw, 0.5);
