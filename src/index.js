@@ -11,6 +11,8 @@ import {
   paddleMove,
 } from './moves';
 
+const { alert: warn } = window;
+
 const canvas = document.getElementById('canvas');
 const context = new MethodChain(canvas.getContext('2d'));
 
@@ -36,7 +38,7 @@ function drawPaddle(x) {
     .closePath();
 }
 
-let state = {
+const initialState = {
   x: 240,
   y: 160,
   velocity: {
@@ -44,6 +46,16 @@ let state = {
   },
   paddleX: (canvas.width - PADDLE_WIDTH) / 2,
 };
+
+let state = initialState;
+let intervalId;
+
+function gameOver() {
+  warn('Game Over');
+  state = initialState;
+  document.location.reload();
+  clearInterval(intervalId);
+}
 
 function bindKeyboardEvents() {
   const handleKeyDown = ({ key }) => {
@@ -72,7 +84,9 @@ function movePaddle() {
 }
 
 function moveBall() {
-  const { x, y, velocity } = state;
+  const {
+    x, y, velocity, paddleX,
+  } = state;
   const { dx, dy } = velocity;
 
   state = move(state);
@@ -81,8 +95,20 @@ function moveBall() {
     state = hitVertical(state);
   }
 
-  if (y + dy + BALL_RADIUS > canvas.height || y + dy - BALL_RADIUS < 0) {
+  if (y + dy - BALL_RADIUS < 0) {
     state = hitHorizontal(state);
+  }
+
+  if (
+    y + dy + BALL_RADIUS > canvas.height - PADDLE_HEIGHT
+    && x + dx >= paddleX
+    && x + dx <= paddleX + PADDLE_WIDTH
+  ) {
+    state = hitHorizontal(state);
+  }
+
+  if (y + dy + BALL_RADIUS > canvas.height) {
+    gameOver();
   }
 }
 
@@ -98,4 +124,4 @@ function draw() {
 }
 
 bindKeyboardEvents();
-setInterval(draw, 0.5);
+intervalId = setInterval(draw, 0.01);
