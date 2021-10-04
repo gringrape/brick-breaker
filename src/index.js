@@ -38,6 +38,32 @@ function drawPaddle(x) {
     .closePath();
 }
 
+function range(from, to) {
+  return [...Array(to - from)].map((_, i) => i);
+}
+
+function drawBricks({
+  rowCount, columnCount, width, height, padding, offsetTop, offsetLeft,
+}) {
+  const drawBrick = ({ x, y }) => {
+    context
+      .beginPath()
+      .rect(x, y, width, height)
+      .set('fillStyle', '#0095DD')
+      .fill()
+      .closePath();
+  };
+
+  range(0, rowCount).forEach((r) => {
+    range(0, columnCount).forEach((c) => {
+      drawBrick({
+        x: offsetLeft + (c + 1) * (width + padding),
+        y: offsetTop + (r + 1) * (height + padding),
+      });
+    });
+  });
+}
+
 const initialState = {
   x: 240,
   y: 160,
@@ -121,6 +147,15 @@ function draw() {
   movePaddle();
   drawBall(x, y);
   drawPaddle(paddleX);
+  drawBricks({
+    rowCount: 3,
+    columnCount: 5,
+    width: 70,
+    height: 30,
+    padding: 20,
+    offsetTop: 10,
+    offsetLeft: 20,
+  });
 }
 
 bindKeyboardEvents();
