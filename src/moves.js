@@ -1,6 +1,7 @@
-function reducer(state, action) {
+function reducer(state, action, payload) {
   const {
     x, y, velocity, paddleX, leftPressed, rightPressed,
+    bricks,
   } = state;
   const { dx, dy } = velocity;
 
@@ -70,6 +71,13 @@ function reducer(state, action) {
         paddleX: paddleX + direction * 3,
       });
     },
+    brickBreak() {
+      const { r, c } = payload;
+
+      bricks[r][c] = { isBroken: true };
+
+      return state;
+    },
   })[action]();
 }
 
@@ -81,3 +89,4 @@ export const pressLeft = (state) => reducer(state, 'pressLeft');
 export const releaseRight = (state) => reducer(state, 'releaseRight');
 export const releaseLeft = (state) => reducer(state, 'releaseLeft');
 export const paddleMove = (state) => reducer(state, 'paddleMove');
+export const brickBreak = (state, payload) => reducer(state, 'brickBreak', payload);

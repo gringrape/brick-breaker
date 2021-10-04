@@ -9,6 +9,7 @@ import {
   releaseRight,
   releaseLeft,
   paddleMove,
+  brickBreak,
 } from './moves';
 
 const { alert: warn } = window;
@@ -17,8 +18,19 @@ const canvas = document.getElementById('canvas');
 const context = new MethodChain(canvas.getContext('2d'));
 
 const BALL_RADIUS = 20;
+
 const PADDLE_WIDTH = 200;
 const PADDLE_HEIGHT = 30;
+
+const ROW_COUNT = 3;
+const COLUMN_COUNT = 5;
+
+const BRICK_WIDTH = 70;
+const BRICK_HEIGHT = 30;
+const BRICK_PADDING = 10;
+
+const OFFSET_LEFT = 20;
+const OFFSET_TOP = 10;
 
 function drawBall(x, y) {
   context
@@ -42,24 +54,24 @@ function range(from, to) {
   return [...Array(to - from)].map((_, i) => i);
 }
 
-function drawBricks({
-  rowCount, columnCount, width, height, padding, offsetTop, offsetLeft,
-}) {
+function drawBricks({ bricks }) {
   const drawBrick = ({ x, y }) => {
     context
       .beginPath()
-      .rect(x, y, width, height)
+      .rect(x, y, BRICK_WIDTH, BRICK_HEIGHT)
       .set('fillStyle', '#0095DD')
       .fill()
       .closePath();
   };
 
-  range(0, rowCount).forEach((r) => {
-    range(0, columnCount).forEach((c) => {
-      drawBrick({
-        x: offsetLeft + (c + 1) * (width + padding),
-        y: offsetTop + (r + 1) * (height + padding),
-      });
+  bricks.forEach((row, r) => {
+    row.forEach(({ isBroken }, c) => {
+      if (!isBroken) {
+        drawBrick({
+          x: OFFSET_LEFT + (c + 1) * (BRICK_WIDTH + BRICK_PADDING),
+          y: OFFSET_TOP + (r + 1) * (BRICK_HEIGHT + BRICK_PADDING),
+        });
+      }
     });
   });
 }
@@ -71,6 +83,11 @@ const initialState = {
     dx: 2, dy: 2,
   },
   paddleX: (canvas.width - PADDLE_WIDTH) / 2,
+  bricks: range(0, ROW_COUNT).map(() => (
+    range(0, COLUMN_COUNT).map(() => ({
+      isBroken: false,
+    }))
+  )),
 };
 
 let state = initialState;
@@ -138,24 +155,41 @@ function moveBall() {
   }
 }
 
+function detectCollision({ x, y, bricks }) {
+  const collide = ({ positionX, positionY }) => (
+    x > positionX && x < positionX + BRICK_WIDTH && y > positionY && y < positionY + BRICK_HEIGHT
+  );
+
+  bricks.forEach((row, r) => {
+    row.forEach((item, c) => {
+      const { isBroken } = item;
+
+      const positionX = OFFSET_LEFT + (c + 1) * (BRICK_WIDTH + BRICK_PADDING);
+      const positionY = OFFSET_TOP + (r + 1) * (BRICK_HEIGHT + BRICK_PADDING);
+
+      if (!isBroken && collide({ positionX, positionY })) {
+        state = brickBreak(state, { r, c });
+        state = hitHorizontal(state);
+      }
+    });
+  });
+}
+
 function draw() {
   context.clearRect(0, 0, canvas.width, canvas.height);
 
-  const { x, y, paddleX } = state;
+  const {
+    x, y, paddleX, bricks,
+  } = state;
 
   moveBall();
   movePaddle();
+
   drawBall(x, y);
   drawPaddle(paddleX);
-  drawBricks({
-    rowCount: 3,
-    columnCount: 5,
-    width: 70,
-    height: 30,
-    padding: 20,
-    offsetTop: 10,
-    offsetLeft: 20,
-  });
+  drawBricks({ bricks });
+
+  detectCollision({ x, y, bricks });
 }
 
 bindKeyboardEvents();
